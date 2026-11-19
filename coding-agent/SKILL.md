@@ -1,11 +1,165 @@
 ---
 name: coding-agent
-description: Entry point for software-coding tasks in a repository. Routes to sub-skills in references/. Currently covers codebase exploration with the codebase-memory MCP knowledge graph. Use when the user wants to explore or understand a codebase, see its architecture or structure, find where a function is defined, find who calls a function or what it calls, trace a call chain, check dependencies, assess the impact of a change, find dead code or unused functions, find high fan-in or fan-out code, pick refactor candidates, or run a code-quality audit.
+description: Entry point and rule set for ALL software-coding tasks in a repository. Holds the coding rules (how to read code, the pre-change checklist, verification after a change, the completion report, the commit message format) and routes to sub-skills in references/. Currently covers codebase exploration with the codebase-memory MCP knowledge graph. Use whenever the user wants to read, explore, understand, change, build, test, review, debug or refactor code, write or fix tests, or get a commit message; also when the user wants to see a codebase's architecture or structure, find where a function is defined, find who calls a function or what it calls, trace a call chain, check dependencies, assess the impact of a change, find dead code or unused functions, find high fan-in or fan-out code, pick refactor candidates, or run a code-quality audit.
 ---
 
 # Coding Agent
 
-Router for coding tasks. Pick the row that matches the task, read that file in full, then follow it.
+Entry point for every coding task. Read this whole file, then follow it.
+
+- The rules below are the coding rules from `CLAUDE.md`, moved here word for word. Section numbers are kept the same as in `CLAUDE.md`, so references like "section 8" still work.
+- Sections 5 (Git and safety), 7 (Answering the user's questions) and 8 (Honesty) stay in `CLAUDE.md`. They still apply to every coding task.
+- For tools that help you explore code (section 1), see [Sub-skills](#sub-skills) and [Tool availability](#tool-availability) at the end of this file.
+
+---
+
+## 1. Reading code
+
+- Explore code with the structure-aware tools the project provides first (for example a code-graph or index server, or editor diagnostics). The project's `CLAUDE.md` names them.
+- Fall back to `grep`, `find`, or a whole-file read only when no such tool exists, when it does not cover the file, or when you need an exact text match.
+- Do not start with a whole-file read or a repo-wide search when a targeted lookup of one symbol would do.
+- Before you rely on an index for code that changed recently, confirm the index is up to date. Re-index if it is stale.
+- "No result" does **not** mean "does not exist". Cross-check with a second method before you conclude something is missing.
+- When you fall back from a project tool to raw search, say so in your report.
+
+---
+## 2. Before you change code: understand the structure first
+
+### 2.1 Pre-change checklist
+
+You **MUST NOT** edit or write code until you finish these steps.
+
+1. **Restate the goal and acceptance criteria.** Write 1 to 3 sentences: what changes, and what "done" means. If the request is ambiguous, ask the user first. Do not guess and rewrite.
+2. **Get an overview** of the area you will change: module boundaries, entry points, and dependency direction.
+3. **Read the current implementation** of every function or component you will change.
+4. **Map the blast radius.** List all callers of each symbol you will change. Before you change a signature, return shape, data format, or API schema, you **MUST inspect every caller**.
+5. **Find existing conventions.** Look up comparable existing code (naming, error handling, comment density, type annotations). New code MUST match the surrounding style.
+6. **Find the matching tests.** Locate the tests that cover this area and learn the contracts they pin.
+7. **Check across layers.** If you change one side of a contract (for example an API and its callers, or a schema and its consumers), check the other side. Never change one side alone.
+8. **Consider every code path.** If the code branches by environment, platform, edition, or configuration, consider every branch when you change it.
+
+### 2.2 Scope discipline
+
+- Change only what the task needs. If you find an unrelated problem, note it and report it at the end. **Do not fix it on the side.**
+- Do not add features, abstraction layers, or dependencies that were not requested.
+
+---
+## 3. After you change code: test and check against the goal
+
+"The code is written" does not mean "done". **You MUST NOT claim the task is complete before you run verification.**
+
+### 3.1 Verification steps
+
+Use the test, type-check, lint, and build commands the project defines. Run them from the directory the project requires.
+
+1. **Run the existing tests.** Cover at least the tests of the modules you changed. For cross-module changes, run the full suite.
+2. **Add tests.** New behavior and bug fixes MUST have matching tests. Match the style of the existing tests.
+3. **Run the type check and build** when the project has them and you touched code they cover.
+4. **Check against the acceptance criteria.** Go back to the criteria you wrote in step 1 of section 2.1 and map **each one** to evidence (test name, command output, observed behavior).
+5. **Assess the blast radius** of your change and confirm every affected symbol is expected. If something unexpected is affected, go back and check it.
+6. **Run it for real.** When feasible, actually start it and use it, instead of relying on unit tests alone. Behavior that needs hardware or services you do not have cannot be verified locally. Mark it explicitly as **unverified**.
+7. **Known failures.** If the project documents known failing tests, only those may fail. Any other failure is a **regression caused by your change**. Fix it before you report.
+
+### 3.2 Prohibitions
+
+- You **MUST NOT** modify, delete, or skip (`skip` / `xfail`) an existing test to make it pass. If a test conflicts with the new requirement, report it with an explanation and let the user decide.
+- You **MUST NOT** substitute "it should work" for real execution results.
+- You **MUST NOT** hide failures. If a test fails, report the failure and attach the command output.
+
+---
+## 4. Completion report format
+
+Every task in which you changed something ends with a report that contains:
+
+```
+Goal:        <one sentence>
+Changes:     <file:line — what was done>
+Verification:
+  - <command> → <result, e.g. 153 passed>
+  - Acceptance criterion 1: <met / not met> — <evidence>
+  - Acceptance criterion 2: ...
+Unverified:  <parts that cannot be verified locally, and why; "none" if none>
+Leftovers:   <unrelated problems found but not handled; "none" if none>
+```
+
+After the report, add the commit message described in section 9.
+
+---
+## 5. Exceptions and deviations
+
+You may simplify sections 1 to 5 in the cases below, but you **MUST state it in your report**:
+
+- Pure documentation, comment, or typo fixes: you may skip step 4 of section 2.1 and steps 2 and 3 of section 3.1.
+- The user explicitly says "no tests needed" or "no need to look at the structure first": comply, and note in your report which step was skipped.
+
+Any other deviation from sections 1 to 5 is a violation. Sections 7 and 8 have no exceptions.
+
+---
+## 6. Git and safety
+
+- Unless the user explicitly asks, **do not** run `git commit` or `git push`.
+- Do not run destructive operations (`rm -rf`, `git reset --hard`, force push, deleting data) without first getting the user's confirmation.
+- Do not write credentials, keys, or the contents of files the project marks as sensitive into commits, output, or logs.
+- The shell working directory can drift during a session. Use absolute paths in commands, or `cd` inside the same command.
+
+---
+## 7. Commit message after a code change
+
+Whenever the user asks you to change code (or tests, docs, or config) and you finish, you MUST give the user a commit message for that change. Put it at the end of your reply, after the completion report (section 4), in one code block so the user can copy it.
+
+- Write the message only. Do not run `git commit` or `git push` unless the user explicitly asks (section 5 still applies).
+- Give the message only after the work is done and verified (section 3). If part of the change is unverified, the message MUST NOT claim that it works.
+- Write the message in English, even when the conversation is in another language.
+- Describe only the change you made in this task. Do not include earlier or unrelated work.
+- Section 7 does not shorten the body. The body gives the detail; the first line stays short.
+
+Format:
+
+```
+<type>: <short summary>
+
+<detailed description of the change>
+```
+
+**Type.** Use exactly one of these, in lowercase, followed by a colon and a space:
+
+| Type | Use for |
+|---|---|
+| `feat` | A new feature |
+| `fix` | A bug fix |
+| `docs` | Documentation changes only |
+| `style` | Formatting that does not change how the code runs (whitespace, semicolons, indentation) |
+| `refactor` | A code restructure that neither fixes a bug nor adds a feature |
+| `perf` | A performance improvement |
+| `test` | Adding or changing tests |
+| `chore` | Build process or tooling changes (CI/CD, dependency updates) |
+| `revert` | Undoing an earlier commit |
+
+Pick the type that matches the main purpose of the change. If the change has unrelated parts of different types, tell the user and offer one message per part.
+
+**Summary (first line).** One short English sentence.
+
+- Imperative mood: "add", "fix", "remove", not "added" or "fixes".
+- Aim for 50 characters or fewer. Never go over 72.
+- No period at the end.
+
+**Body (after one blank line).** The detailed version of the same change.
+
+- Say what changed and why, in bullets, one bullet per logical change.
+- Name the files, modules, or functions involved, and say what behavior is different now.
+- Describe the real change only. Do not pad it.
+
+Example (the names are made up, only the shape matters):
+
+```
+fix: reject empty username on login
+
+- Validate the username in the login handler before the database lookup
+- Return a 400 with a clear message instead of failing later with a 500
+- Add a test for the empty-username case
+```
+
+---
 
 ## Sub-skills
 
