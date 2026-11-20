@@ -17,6 +17,7 @@ If the task is about code, you **MUST** invoke the `coding-agent` skill (Skill t
 
 - Skill file: [coding-agent/SKILL.md](coding-agent/SKILL.md). If you cannot invoke skills, read this file in full instead.
 - Sub-skill for exploring code with the knowledge graph: [coding-agent/references/codebase-memory/SKILL.md](coding-agent/references/codebase-memory/SKILL.md). The coding-agent skill tells you when to read it.
+- Sub-skill for security audits: [coding-agent/references/security-audit/SKILL.md](coding-agent/references/security-audit/SKILL.md). **Trigger:** the user's prompt asks you to audit, review or pen-test code for security issues or vulnerabilities, or asks a security question about a codebase. Then invoke the `coding-agent` skill as usual, and follow its security-audit row, which sends you to this file. It does not apply to other prompts, and does not carry over to later turns unless the user asks again. If you cannot invoke skills, read the file directly.
 - Sections 1 and 2 are numbered inside the skill file. Sections 7 and 8 are numbered in this file. In the table below, "Where" says which file a section lives in:
 
 | Section | Topic | Where |

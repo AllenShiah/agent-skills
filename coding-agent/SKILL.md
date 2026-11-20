@@ -1,6 +1,6 @@
 ---
 name: coding-agent
-description: Entry point and rule set for ALL software-coding tasks in a repository. Holds the coding rules (how to read code, the pre-change checklist, verification after a change, the completion report, the commit message format) and routes to sub-skills in references/. Currently covers codebase exploration with the codebase-memory MCP knowledge graph. Use whenever the user wants to read, explore, understand, change, build, test, review, debug or refactor code, write or fix tests, or get a commit message; also when the user wants to see a codebase's architecture or structure, find where a function is defined, find who calls a function or what it calls, trace a call chain, check dependencies, assess the impact of a change, find dead code or unused functions, find high fan-in or fan-out code, pick refactor candidates, or run a code-quality audit.
+description: Entry point and rule set for ALL software-coding tasks in a repository. Holds the coding rules (how to read code, the pre-change checklist, verification after a change, the completion report, the commit message format) and routes to sub-skills in references/. Currently covers two sub-skills: codebase exploration with the codebase-memory MCP knowledge graph, and security audit (security review, vulnerability research, pen test) with the security-audit reference. Use whenever the user asks to audit, review or pen-test code for security issues or vulnerabilities, or asks a security question about a codebase; also whenever the user wants to read, explore, understand, change, build, test, review, debug or refactor code, write or fix tests, or get a commit message; also when the user wants to see a codebase's architecture or structure, find where a function is defined, find who calls a function or what it calls, trace a call chain, check dependencies, assess the impact of a change, find dead code or unused functions, find high fan-in or fan-out code, pick refactor candidates, or run a code-quality audit.
 ---
 
 # Coding Agent
@@ -10,6 +10,7 @@ Entry point for every coding task. Read this whole file, then follow it.
 - The rules below are the coding rules from `CLAUDE.md`. In this file there are two sections: 1 (Reading code) and 2 (The S.O.P. for modifying code, with parts 2.1 to 2.5). A "section" number in this file means a section of this file, except sections 7 and 8, which mean `CLAUDE.md`.
 - Sections 7 (Answering the user's questions) and 8 (Honesty) stay in `CLAUDE.md`. They still apply to every coding task. The git and safety rules are in section 2.2 of this file.
 - For tools that help you explore code (section 1), see [Sub-skills](#sub-skills) and [Tool availability](#tool-availability) at the end of this file.
+- If the user asks you to audit code for security issues, go to [Sub-skills](#sub-skills) and read the security-audit row. Do not load it for other tasks.
 
 ---
 
@@ -147,8 +148,18 @@ fix: reject empty username on login
 | Task | Read this file |
 |------|----------------|
 | Understand structure, find callers or callees, trace calls, dependencies, impact analysis, dead code, architecture | [references/codebase-memory/SKILL.md](references/codebase-memory/SKILL.md) |
+| Security audit: the user's prompt asks to audit, review or pen-test code for security issues or vulnerabilities (for example "audit my code for security issues", "find vulnerabilities", "security review", "pen test", "is this code secure"), or asks a security question about a codebase | [references/security-audit/SKILL.md](references/security-audit/SKILL.md) |
 
 If no row matches, do the task normally. Do not force a sub-skill.
+
+### Security audit: when and how
+
+- **Trigger only on request.** Read the security-audit file only when the user's prompt asks for a security audit or review. Do not load it for ordinary coding tasks, and do not keep applying it to later turns in the same session unless the user asks again.
+- **Read it in full** (all of `references/security-audit/SKILL.md`), then follow it. It links to companion files in the same folder (for example `HUNTING.md`, `VALIDATION-AND-REPORTING.md`). Open a companion file only when `SKILL.md` tells you to.
+- **Mode.** The security-audit file decides between guidance mode and full audit mode. A full audit writes report files, so if the request could mean either, ask the user one question first, as that file says.
+- **Reading code.** Section 1 still applies: explore with the codebase-memory tools first (see the first row), then fall back to grep or file reads.
+- **An audit is read-only.** Sections 2.1 to 2.5 apply only if the user then asks you to fix a finding. An audit alone has no completion report (section 2.4) and no commit message (section 2.5). Use the report format the security-audit file defines. Sections 7 and 8 still apply.
+- **If the file cannot be found or read,** tell the user. Do not run a security audit from memory and present it as this skill's result.
 
 ## Tool availability
 
