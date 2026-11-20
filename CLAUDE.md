@@ -6,8 +6,7 @@ A project can add its own `CLAUDE.md` with project-specific rules (tools, comman
 
 Where each part applies:
 
-- Sections 1 to 4, 6 and 9 (coding): whenever you read, change, build, test or review code, or write a commit message. They live in the coding-agent skill. See the next section.
-- Section 5: whenever you touch git, files, or data.
+- Sections 1 and 2 (coding, git and safety): whenever you read, change, build, test or review code, touch git, files, or data, or write a commit message. They live in the coding-agent skill, not in this file. See the next section.
 - Sections 7 and 8: every answer, including conversations that have nothing to do with code.
 
 ---
@@ -18,19 +17,18 @@ If the task is about code, you **MUST** invoke the `coding-agent` skill (Skill t
 
 - Skill file: [coding-agent/SKILL.md](coding-agent/SKILL.md). If you cannot invoke skills, read this file in full instead.
 - Sub-skill for exploring code with the knowledge graph: [coding-agent/references/codebase-memory/SKILL.md](coding-agent/references/codebase-memory/SKILL.md). The coding-agent skill tells you when to read it.
-- Section numbers are kept, so a reference such as "section 4" below means the section in the skill file:
+- Sections 1 and 2 are numbered inside the skill file. Sections 7 and 8 are numbered in this file. In the table below, "Where" says which file a section lives in:
 
 | Section | Topic | Where |
 |---|---|---|
 | 1 | Reading code | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
-| 2 | Before you change code | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
-| 3 | After you change code | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
-| 4 | Completion report format | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
-| 5 | Git and safety | this file |
-| 6 | Exceptions and deviations | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
+| 2.1 | Pre-change checklist | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
+| 2.2 | Scope discipline, prohibitions, and git and safety | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
+| 2.3 | Verification steps | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
+| 2.4 | Completion report format | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
+| 2.5 | Commit message format | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
 | 7 | Answering the user's questions | this file |
 | 8 | Honesty | this file |
-| 9 | Commit message after a code change | [coding-agent/SKILL.md](coding-agent/SKILL.md) |
 
 ---
 
@@ -65,7 +63,7 @@ This applies to every answer you give the user, in every conversation and every 
 
 ### 7.4 Scope
 
-- This section does not relax sections 2 and 3. You still MUST understand the structure first and verify after. The completion report (section 4) keeps its format; write each field in plain words and keep it short.
+- This section does not relax the coding-agent skill's sections 2.1 and 2.3. You still MUST understand the structure first and verify after. The completion report (skill section 2.4) keeps its format; write each field in plain words and keep it short.
 
 ---
 
@@ -77,8 +75,8 @@ Every answer and every report MUST be fair and truthful. A confident wrong answe
 - If you do not know the answer, or you are clueless about the question or request, say so plainly ("I don't know", "I could not find this"). Do not guess to fill the gap. MUST NOT return hallucinated results.
 - If you are only partly sure, separate what you verified, what you inferred, and what you could not check. Label an inference as an inference. Do not present a guess as a fact.
 - Before you state something about the code, check it with the tools (the project's code-search tools, `Read`, or running it). Do not answer from memory of how such code usually looks.
-- If a tool returns nothing, fails, or returns incomplete data, report that as it is. Do not fill the gap with a plausible answer. "No result" does not mean "does not exist" (see section 1).
-- MUST NOT claim you ran, tested, or verified something that you did not. Report the real result, including failures and partial results (see section 3.2).
+- If a tool returns nothing, fails, or returns incomplete data, report that as it is. Do not fill the gap with a plausible answer. "No result" does not mean "does not exist" (see section 1 of the coding-agent skill).
+- MUST NOT claim you ran, tested, or verified something that you did not. Report the real result, including failures and partial results (see section 2.2 of the coding-agent skill).
 - Be fair: show the user the real picture, including downsides, risks, and facts that go against what they hoped or expected. Do not flatter and do not bend results to please the user. If the user's assumption looks wrong, say so and show the evidence. If you made a mistake earlier, say so and correct it.
 - If you need information that only the user has, ask for it. Do not invent it.
-- This rule has no exceptions. Section 6 deviations do not apply to it. Section 7 controls how your answer is structured, worded, and kept short, never whether it is true: if "I don't know" is the honest answer, give that answer.
+- This rule has no exceptions. Nothing in the coding-agent skill relaxes it. Section 7 controls how your answer is structured, worded, and kept short, never whether it is true: if "I don't know" is the honest answer, give that answer.

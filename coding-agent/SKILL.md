@@ -7,8 +7,8 @@ description: Entry point and rule set for ALL software-coding tasks in a reposit
 
 Entry point for every coding task. Read this whole file, then follow it.
 
-- The rules below are the coding rules from `CLAUDE.md`, moved here word for word. Section numbers are kept the same as in `CLAUDE.md`, so references like "section 8" still work.
-- Sections 5 (Git and safety), 7 (Answering the user's questions) and 8 (Honesty) stay in `CLAUDE.md`. They still apply to every coding task.
+- The rules below are the coding rules from `CLAUDE.md`. In this file there are two sections: 1 (Reading code) and 2 (The S.O.P. for modifying code, with parts 2.1 to 2.5). A "section" number in this file means a section of this file, except sections 7 and 8, which mean `CLAUDE.md`.
+- Sections 7 (Answering the user's questions) and 8 (Honesty) stay in `CLAUDE.md`. They still apply to every coding task. The git and safety rules are in section 2.2 of this file.
 - For tools that help you explore code (section 1), see [Sub-skills](#sub-skills) and [Tool availability](#tool-availability) at the end of this file.
 
 ---
@@ -23,51 +23,51 @@ Entry point for every coding task. Read this whole file, then follow it.
 - When you fall back from a project tool to raw search, say so in your report.
 
 ---
-## 2. Before you change code: understand the structure first
+
+## 2. The S.O.P. for modifying code
+
+Follow the standard operating procedure below whenever you modify code (or tests, docs, or config).
 
 ### 2.1 Pre-change checklist
 
 You **MUST NOT** edit or write code until you finish these steps.
 
-1. **Restate the goal and acceptance criteria.** Write 1 to 3 sentences: what changes, and what "done" means. If the request is ambiguous, ask the user first. Do not guess and rewrite.
-2. **Get an overview** of the area you will change: module boundaries, entry points, and dependency direction.
-3. **Read the current implementation** of every function or component you will change.
-4. **Map the blast radius.** List all callers of each symbol you will change. Before you change a signature, return shape, data format, or API schema, you **MUST inspect every caller**.
-5. **Find existing conventions.** Look up comparable existing code (naming, error handling, comment density, type annotations). New code MUST match the surrounding style.
-6. **Find the matching tests.** Locate the tests that cover this area and learn the contracts they pin.
-7. **Check across layers.** If you change one side of a contract (for example an API and its callers, or a schema and its consumers), check the other side. Never change one side alone.
-8. **Consider every code path.** If the code branches by environment, platform, edition, or configuration, consider every branch when you change it.
+1. **Explore the code first.** Before anything else on this list, explore the area you will change by following section 1 (Reading code).
+2. **Restate the goal and acceptance criteria.** Write 1 to 3 sentences: what changes, and what "done" means. If the request is ambiguous, ask the user first. Do not guess and rewrite.
+3. **Get an overview** of the area you will change: module boundaries, entry points, and dependency direction.
+4. **Read the current implementation** of every function or component you will change.
+5. **Map the blast radius.** List all callers of each symbol you will change. Before you change a signature, return shape, data format, or API schema, you **MUST inspect every caller**.
+6. **Find existing conventions.** Look up comparable existing code (naming, error handling, comment density, type annotations). New code MUST match the surrounding style.
+7. **Find the matching tests.** Locate the tests that cover this area and learn the contracts they pin.
+8. **Check across layers.** If you change one side of a contract (for example an API and its callers, or a schema and its consumers), check the other side. Never change one side alone.
+9. **Consider every code path.** If the code branches by environment, platform, edition, or configuration, consider every branch when you change it.
 
-### 2.2 Scope discipline
+### 2.2 Scope discipline, prohibitions, and git and safety
 
 - Change only what the task needs. If you find an unrelated problem, note it and report it at the end. **Do not fix it on the side.**
 - Do not add features, abstraction layers, or dependencies that were not requested.
+- You **MUST NOT** modify, delete, or skip (`skip` / `xfail`) an existing test to make it pass. If a test conflicts with the new requirement, report it with an explanation and let the user decide.
+- You **MUST NOT** substitute "it should work" for real execution results.
+- You **MUST NOT** hide failures. If a test fails, report the failure and attach the command output.
+- Unless the user explicitly asks, **do not** run `git commit` or `git push`.
+- Do not run destructive operations (`rm -rf`, `git reset --hard`, force push, deleting data) without first getting the user's confirmation.
+- Do not write credentials, keys, or the contents of files the project marks as sensitive into commits, output, or logs.
+- The shell working directory can drift during a session. Use absolute paths in commands, or `cd` inside the same command.
 
----
-## 3. After you change code: test and check against the goal
+### 2.3 Verification steps
 
 "The code is written" does not mean "done". **You MUST NOT claim the task is complete before you run verification.**
-
-### 3.1 Verification steps
-
 Use the test, type-check, lint, and build commands the project defines. Run them from the directory the project requires.
 
 1. **Run the existing tests.** Cover at least the tests of the modules you changed. For cross-module changes, run the full suite.
 2. **Add tests.** New behavior and bug fixes MUST have matching tests. Match the style of the existing tests.
 3. **Run the type check and build** when the project has them and you touched code they cover.
-4. **Check against the acceptance criteria.** Go back to the criteria you wrote in step 1 of section 2.1 and map **each one** to evidence (test name, command output, observed behavior).
+4. **Check against the acceptance criteria.** Go back to the criteria you wrote in step 2 of section 2.1 and map **each one** to evidence (test name, command output, observed behavior).
 5. **Assess the blast radius** of your change and confirm every affected symbol is expected. If something unexpected is affected, go back and check it.
 6. **Run it for real.** When feasible, actually start it and use it, instead of relying on unit tests alone. Behavior that needs hardware or services you do not have cannot be verified locally. Mark it explicitly as **unverified**.
 7. **Known failures.** If the project documents known failing tests, only those may fail. Any other failure is a **regression caused by your change**. Fix it before you report.
 
-### 3.2 Prohibitions
-
-- You **MUST NOT** modify, delete, or skip (`skip` / `xfail`) an existing test to make it pass. If a test conflicts with the new requirement, report it with an explanation and let the user decide.
-- You **MUST NOT** substitute "it should work" for real execution results.
-- You **MUST NOT** hide failures. If a test fails, report the failure and attach the command output.
-
----
-## 4. Completion report format
+### 2.4 Completion report format (after a code change)
 
 Every task in which you changed something ends with a report that contains:
 
@@ -82,33 +82,14 @@ Unverified:  <parts that cannot be verified locally, and why; "none" if none>
 Leftovers:   <unrelated problems found but not handled; "none" if none>
 ```
 
-After the report, add the commit message described in section 9.
+After the report, add the commit message described in section 2.5.
 
----
-## 5. Exceptions and deviations
+### 2.5 Commit message format (after a code change)
 
-You may simplify sections 1 to 5 in the cases below, but you **MUST state it in your report**:
+Whenever the user asks you to change code (or tests, docs, or config) and you finish, you MUST give the user a commit message for that change. Put it at the end of your reply, after the completion report (section 2.4), in one code block so the user can copy it.
 
-- Pure documentation, comment, or typo fixes: you may skip step 4 of section 2.1 and steps 2 and 3 of section 3.1.
-- The user explicitly says "no tests needed" or "no need to look at the structure first": comply, and note in your report which step was skipped.
-
-Any other deviation from sections 1 to 5 is a violation. Sections 7 and 8 have no exceptions.
-
----
-## 6. Git and safety
-
-- Unless the user explicitly asks, **do not** run `git commit` or `git push`.
-- Do not run destructive operations (`rm -rf`, `git reset --hard`, force push, deleting data) without first getting the user's confirmation.
-- Do not write credentials, keys, or the contents of files the project marks as sensitive into commits, output, or logs.
-- The shell working directory can drift during a session. Use absolute paths in commands, or `cd` inside the same command.
-
----
-## 7. Commit message after a code change
-
-Whenever the user asks you to change code (or tests, docs, or config) and you finish, you MUST give the user a commit message for that change. Put it at the end of your reply, after the completion report (section 4), in one code block so the user can copy it.
-
-- Write the message only. Do not run `git commit` or `git push` unless the user explicitly asks (section 5 still applies).
-- Give the message only after the work is done and verified (section 3). If part of the change is unverified, the message MUST NOT claim that it works.
+- Write the message only. Do not run `git commit` or `git push` unless the user explicitly asks (section 2.2 still applies).
+- Give the message only after the work is done and verified (section 2.3). If part of the change is unverified, the message MUST NOT claim that it works.
 - Write the message in English, even when the conversation is in another language.
 - Describe only the change you made in this task. Do not include earlier or unrelated work.
 - Section 7 does not shorten the body. The body gives the detail; the first line stays short.
@@ -177,3 +158,5 @@ If no row matches, do the task normally. Do not force a sub-skill.
 2. Your agent may add a prefix to the tool name. Claude Code shows `mcp__codebase-memory-mcp__search_graph`. The reference file uses the short names. Use whatever name your agent shows.
 3. If the tools are there: use them first for structure questions. Use grep or file reads for exact text, config and non-code files.
 4. If the tools are not there: tell the user the MCP server is not available in this agent. Fall back to grep, file reads and editor symbol search. Do not invent graph results. Do not try to install the server unless the user asks.
+
+---
